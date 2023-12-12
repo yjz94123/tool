@@ -40,6 +40,7 @@ const columns = [
 ];
 
 const Home = () => {
+  const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [tableData, setTableData] = useState([]);
   const [inputPrivateKeys, setInputPrivateKeys] = useState('');
@@ -50,13 +51,18 @@ const Home = () => {
     const savedPrivateKeys = localStorage.getItem('privateKeys');
     if (savedPrivateKeys) {
       setSavedPrivateKeys(savedPrivateKeys); // 更新状态
+      importPrivateKeys(savedPrivateKeys)
     }
   }, []);
 
   // 导入私钥
-  const importPrivateKeys = async () => {
+  const importPrivateKeys = async (privateKeys) => {
+     // 关闭弹出框
+     setShowModal(false);
     // 将输入拆分为私钥数组
-    const privateKeysArray = inputPrivateKeys.split('\n').map((key) => key.trim());
+    console.log(privateKeys)
+    setLoading(true);
+    const privateKeysArray = privateKeys.split('\n').map((key) => key.trim());
   
     const provider = new providers.JsonRpcProvider('https://eth-mainnet.g.alchemy.com/v2/6CgT1Pm0kzQD-X525iRt_OdyrYiHGF8g');
   
@@ -88,16 +94,15 @@ const Home = () => {
     setTableData([...tableData, ...filteredData]);
   
     // 更新已保存的私钥状态
-    setSavedPrivateKeys(inputPrivateKeys);
-  
+    setSavedPrivateKeys(privateKeys);
+
     // 保存私钥到本地存储
-    localStorage.setItem('privateKeys', inputPrivateKeys);
+    localStorage.setItem('privateKeys',privateKeys);
   
     // 清空输入框
     setInputPrivateKeys('');
+    setLoading(false);
   
-    // 关闭弹出框
-    setShowModal(false);
   };
 
   return (
@@ -120,7 +125,7 @@ const Home = () => {
           <Button>导出</Button>
         </div>
       </div>
-      <Table columns={columns} dataSource={tableData} />
+      <Table columns={columns} dataSource={tableData}  loading={loading}/>
 
       {/* 使用 Modal 组件显示弹出框 */}
       <Modal
@@ -131,7 +136,7 @@ const Home = () => {
           <Button key="cancel" onClick={() => setShowModal(false)}>
             取消
           </Button>,
-          <Button key="import" type="primary" onClick={importPrivateKeys}>
+          <Button key="import" type="primary" onClick={() => importPrivateKeys(inputPrivateKeys)}>
             导入
           </Button>,
         ]}
