@@ -62,8 +62,10 @@ const Home = () => {
      //table Loaidng打开
     setLoading(true);
 
+    //获取钱包数据
     const filteredData= await connect.importPrivateKeys(privateKeys)
-   // 合并新数据和旧数据，过滤掉重复的条目
+
+   // 合并新数据和旧数据，过滤掉重复的数据
    const newData = [...tableData, ...filteredData];
    const uniqueData = newData.reduce((acc, current) => {
      const x = acc.find(item => item.address === current.address);
