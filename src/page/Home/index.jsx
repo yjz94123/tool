@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button, Input, Table, Checkbox, Modal } from 'antd';
 import { Wallet, utils, providers } from 'ethers';
 import './index.less';
-
+import connect from '@/connect/index'
 // 表格列
 const columns = [
   {
@@ -51,54 +51,36 @@ const Home = () => {
     const savedPrivateKeys = localStorage.getItem('privateKeys');
     if (savedPrivateKeys) {
       setSavedPrivateKeys(savedPrivateKeys); // 更新状态
-      importPrivateKeys(savedPrivateKeys)
+      handlePrivateKeys(savedPrivateKeys)
     }
   }, []);
 
   // 导入私钥
-  const importPrivateKeys = async (privateKeys) => {
+  const handlePrivateKeys = async (privateKeys) => {
      // 关闭弹出框
      setShowModal(false);
-    // 将输入拆分为私钥数组
-    console.log(privateKeys)
+     //table Loaidng打开
     setLoading(true);
-    const privateKeysArray = privateKeys.split('\n').map((key) => key.trim());
-  
-    const provider = new providers.JsonRpcProvider('https://eth-mainnet.g.alchemy.com/v2/6CgT1Pm0kzQD-X525iRt_OdyrYiHGF8g');
-  
-    // 处理每个私钥
-    const newData = await Promise.all(privateKeysArray.map(async (privateKey) => {
-      try {
-        const wallet = new Wallet(privateKey, provider);
-        const address = wallet.address;
-        const balanceBN = await wallet.getBalance();
-        const balance = utils.formatEther(balanceBN);
-  
-        return {
-          key: address,
-          address,
-          balance,
-          group: '',  // 根据需要设置分组
-          exchangeAddress: '',  // 根据需要设置交易所地址
-        };
-      } catch (error) {
-        console.error(`导入私钥时发生错误：${error.message}`);
-        return null;
-      }
-    }));
-  
-    // 过滤掉空值（导入失败的私钥）
-    const filteredData = newData.filter((item) => item !== null);
-  
-    // 更新表格数据
-    setTableData([...tableData, ...filteredData]);
+
+    const filteredData= await connect.importPrivateKeys(privateKeys)
+   // 合并新数据和旧数据，过滤掉重复的条目
+   const newData = [...tableData, ...filteredData];
+   const uniqueData = newData.reduce((acc, current) => {
+     const x = acc.find(item => item.address === current.address);
+     if (!x) {
+       return acc.concat([current]);
+     } else {
+       return acc;
+     }
+   }, []);
+ 
+   // 更新表格数据
+   setTableData(uniqueData);
   
     // 更新已保存的私钥状态
-    setSavedPrivateKeys(privateKeys);
+     setSavedPrivateKeys(privateKeys);
 
-    // 保存私钥到本地存储
-    localStorage.setItem('privateKeys',privateKeys);
-  
+   
     // 清空输入框
     setInputPrivateKeys('');
     setLoading(false);
@@ -136,7 +118,7 @@ const Home = () => {
           <Button key="cancel" onClick={() => setShowModal(false)}>
             取消
           </Button>,
-          <Button key="import" type="primary" onClick={() => importPrivateKeys(inputPrivateKeys)}>
+          <Button key="import" type="primary" onClick={() => handlePrivateKeys(inputPrivateKeys)}>
             导入
           </Button>,
         ]}
@@ -145,7 +127,7 @@ const Home = () => {
         <Input.TextArea
           placeholder="在这里粘贴私钥，多个私钥请用回车换行分隔"
           autoSize={{ minRows: 3, maxRows: 6 }}
-          value={inputPrivateKeys || savedPrivateKeys} // 使用已保存的私钥
+          value={inputPrivateKeys} // 使用已保存的私钥
           onChange={(e) => setInputPrivateKeys(e.target.value)}
         />
       </Modal>
